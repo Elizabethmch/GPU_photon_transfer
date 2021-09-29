@@ -147,14 +147,11 @@
   <ItemGroup>
     <ClCompile Include="LUT.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="MyCudaToolkit.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="ManagePhotonAbsorption.cu" />
-    <CudaCompile Include="RandomLUT.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-      <DeploymentContent>false</DeploymentContent>
-      <FileType>Document</FileType>
-    </CudaCompile>
+    <CudaCompile Include="RandomLUT.cu" />
     <None Include="RandomLUT.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

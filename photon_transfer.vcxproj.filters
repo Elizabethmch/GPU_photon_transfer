@@ -32,6 +32,9 @@
     <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="MyCudaToolkit.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="RandomLUT.h">
@@ -39,10 +42,10 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="RandomLUT.cu">
+    <CudaCompile Include="ManagePhotonAbsorption.cu">
       <Filter>源文件</Filter>
     </CudaCompile>
-    <CudaCompile Include="ManagePhotonAbsorption.cu">
+    <CudaCompile Include="RandomLUT.cu">
       <Filter>源文件</Filter>
     </CudaCompile>
   </ItemGroup>

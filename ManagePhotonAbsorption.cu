@@ -1,7 +1,11 @@
 #include "ManagePhotonAbsorption.h"
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
+#include <iostream>
+//#include "RandomLUT.cu"
 #include "MyCudaToolkit.h"
+
+using namespace std;
 
 __global__ void SimulatePhotonAbsorption(long* absorb_num, int depth, double* lut) {
 
@@ -11,7 +15,7 @@ __global__ void SimulatePhotonAbsorption(long* absorb_num, int depth, double* lu
 /**************************************************
 * Calculate number of photon absorbed for given depth & incident photon number
 **************************************************/
-long ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, vector<long> incident_photon_num) {
+long ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, vector<long> incident_photon_num, int threadBlockSize) {
 	
 	vector<int> lut_size = look_up_table->getLUTSize();
 	int lut_total_size = 1;
@@ -34,11 +38,15 @@ long ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, vector<l
 
 
 	//Simulate photon absorption for each depth
+	dim3 blockDim;
+	dim3 gridDim;
 	for (int dptid = 0; dptid < depth_in_bin.size(); dptid++) {
 		//Photon-absorption state array
 		long* d_absorb_num;
 		long* h_absorb_num;
 		CHECK(cudaMalloc((void**)&d_absorb_num, incident_photon_num[dptid] * sizeof(long)));
+		blockDim.x = threadBlockSize;
+		gridDim.x = (incident_photon_num[dptid] - 1) / blockDim.x + 1;
 
 	}
 
