@@ -42,10 +42,10 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="ManagePhotonAbsorption.cu">
+    <CudaCompile Include="RandomLUT.cu">
       <Filter>源文件</Filter>
     </CudaCompile>
-    <CudaCompile Include="RandomLUT.cu">
+    <CudaCompile Include="ManagePhotonAbsorption.cu">
       <Filter>源文件</Filter>
     </CudaCompile>
   </ItemGroup>

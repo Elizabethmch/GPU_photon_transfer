@@ -1,11 +1,39 @@
 #include "ManagePhotonAbsorption.h"
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
-#include <iostream>
-//#include "RandomLUT.cu"
+#include <cooperative_groups.h>
 #include "MyCudaToolkit.h"
 
-using namespace std;
+namespace cg = cooperative_groups;
+
+__device__ unsigned int reduce_sum(long in, cg::thread_block cta)
+{
+	extern __shared__ long sdata[];
+
+
+	// Perform first level of reduction:
+	// - Write to shared memory
+	unsigned int ltid = threadIdx.x;
+	//printf("1");
+	sdata[ltid] = in;
+
+	cg::sync(cta);
+	//printf("2");
+		// Do reduction in shared mem
+	for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1)
+	{
+		if (ltid < s)
+		{
+			//printf("%d\n",ltid + s);
+			sdata[ltid] += sdata[ltid + s];
+		}
+
+		cg::sync(cta);
+	}
+
+
+	return sdata[0];
+}
 
 __global__ void SimulatePhotonAbsorption(long* absorb_num, int depth, double* lut) {
 
@@ -38,15 +66,11 @@ long ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, vector<l
 
 
 	//Simulate photon absorption for each depth
-	dim3 blockDim;
-	dim3 gridDim;
 	for (int dptid = 0; dptid < depth_in_bin.size(); dptid++) {
 		//Photon-absorption state array
 		long* d_absorb_num;
 		long* h_absorb_num;
 		CHECK(cudaMalloc((void**)&d_absorb_num, incident_photon_num[dptid] * sizeof(long)));
-		blockDim.x = threadBlockSize;
-		gridDim.x = (incident_photon_num[dptid] - 1) / blockDim.x + 1;
 
 	}
 
