@@ -36,7 +36,25 @@ __device__ unsigned int reduce_sum(long in, cg::thread_block cta)
 }
 
 __global__ void SimulatePhotonAbsorption(long* absorb_num, int depth, double* lut) {
+	cg::thread_block cta = cg::this_thread_block();
+	int bid = blockIdx.x;
+	int tid = blockDim.x * blockIdx.x + threadIdx.x;
+	if (tid == 0) printf("flag %d processing...\n", flag);
+	//if (tid > size) return;
+	int count_flag = tid % 2;
+	//printf("1: %d, %d\n", count_flag, threadIdx.x);
 
+	if (tid >= size) count_flag = 0;
+	count_flag = reduce_sum(count_flag, cta);
+	//__syncthreads();
+
+	if (threadIdx.x == 0) {
+		//printf("2\n");
+		//printf("%d\n", count_flag);
+		printf("Check sync in GPU\n");
+		count[bid] = count_flag;
+	}
+	if (tid == 0) printf("flag %d complete...\n", flag);
 }
 
 

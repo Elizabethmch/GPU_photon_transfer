@@ -147,6 +147,7 @@
   <ItemGroup>
     <ClCompile Include="LUT.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="MyCudaToolkit.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="ManagePhotonAbsorption.cu" />

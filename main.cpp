@@ -9,6 +9,6 @@ int main(int argc, char **argv) {
 	//PrintRndmLUT();
 	LUT* table = new LUT();
 	const vector<double>* test = table->getLUTAddress();
-	//tabel->PrintLUT();
+	table->PrintLUT();
 	return 1;
 }
