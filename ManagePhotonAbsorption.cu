@@ -2,8 +2,10 @@
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
 #include <cooperative_groups.h>
+#include <vector>
 #include "MyCudaToolkit.h"
 
+using namespace std;
 namespace cg = cooperative_groups;
 
 __device__ unsigned int reduce_sum(long in, cg::thread_block cta)
@@ -35,11 +37,10 @@ __device__ unsigned int reduce_sum(long in, cg::thread_block cta)
 	return sdata[0];
 }
 
-__global__ void SimulatePhotonAbsorption(long* absorb_num, int depth, double* lut) {
+__global__ void SimulatePhotonAbsorption(long* count, int depth, double* lut, long* photon_num, int* grid_divide_points) {
 	cg::thread_block cta = cg::this_thread_block();
 	int bid = blockIdx.x;
 	int tid = blockDim.x * blockIdx.x + threadIdx.x;
-	if (tid == 0) printf("flag %d processing...\n", flag);
 	//if (tid > size) return;
 	int count_flag = tid % 2;
 	//printf("1: %d, %d\n", count_flag, threadIdx.x);
@@ -82,15 +83,28 @@ long ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, vector<l
 	CHECK( cudaMalloc((void**)&d_lut, lut_total_size * sizeof( double ) ) );
 	CHECK( cudaMemcpy((void*)d_lut, &((*h_lut_ptr)[0]), lut_total_size * sizeof(double), cudaMemcpyHostToDevice));
 
+	long* d_photonnum;
+	CHECK(cudaMalloc((void**)d_photonnum, depth.size() * sizeof(long)));
+	CHECK(cudaMemcpy((void*)d_photonnum, (void*)&(incident_photon_num[0]), depth.size() * sizeof(long), cudaMemcpyHostToDevice));
 
+	long* h_DepthCnt_ary, * d_DepthCnt_ary;
+	int *h_GridDivide, *d_GridDivide;
+	//int* h_GridDivideId, * d_GridDibideId;
+	h_GridDivide = (int*)malloc(depth.size() * sizeof(int));
+	CHECK(cudaMalloc((void**)d_GridDivide, depth.size() * sizeof(int)));
+
+	dim3 block, grid;
+	block.x = threadBlockSize;
+	grid.x = 0;
 	//Simulate photon absorption for each depth
-	for (int dptid = 0; dptid < depth_in_bin.size(); dptid++) {
-		//Photon-absorption state array
-		long* d_absorb_num;
-		long* h_absorb_num;
-		CHECK(cudaMalloc((void**)&d_absorb_num, incident_photon_num[dptid] * sizeof(long)));
-
+	for (int dptid = 0; dptid < depth.size(); dptid++) {
+		//Allocate memory and size for gpu, grid and so on
+		int tmp = (incident_photon_num[dptid] - 1) / block.x;
+		grid.x += tmp;
+		h_GridDivide[dptid] = grid.x;
 	}
+	CHECK( cudaMalloc((void**)&d_DepthCnt_ary, grid.x * sizeof(long)) );
+	CHECK( cudaMemcpy( (void*)d_GridDivide, (void*)h_GridDivide, depth.size(), cudaMemcpyHostToDevice) );
 
 	return 1;
 }
