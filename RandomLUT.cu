@@ -1,5 +1,6 @@
 ﻿#include <iostream>
 #include <vector>
+#include <string>
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
 #include <fstream>
@@ -73,6 +74,31 @@ void PrintRndmLUT() {
 	outFile.close();
 	cudaFree(d_lut);
 	cudaFree(states);
+	free(h_lut);
+
+}
+
+void PrintUniformLUT(int prob) {
+	const int dim = 2;
+	int dim_size[dim] = { 100, 50 };
+	int total_size = 1;
+	cout << "Printing uniform LUT with dimension: ";
+	for (int i = 0; i < dim; i++) {
+		cout << dim_size[i];
+		if (i < dim - 1)	cout << " * ";
+		total_size *= dim_size[i];
+	}
+	cout << endl;
+
+	double* h_lut = (double*)malloc(sizeof(double) * total_size);
+
+
+	ofstream outFile("lut"+to_string(prob)+".dat", ios::out | ios::binary);
+	for (int i = 0; i < total_size; i++) {
+		h_lut[i] = prob / 100.;
+		outFile.write((char*)&h_lut[i], sizeof(h_lut[i]));
+	}
+	outFile.close();
 	free(h_lut);
 
 }

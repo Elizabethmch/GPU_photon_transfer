@@ -14,7 +14,7 @@ LUT::LUT(int dim, vector<int> dim_size, string LutDataFile) : dim(dim), lut_name
 	size = dim_size;
 	int totalsize = 1;
 	for (int i = 0; i < dim; i++) totalsize *= dim_size[i];
-	prob_table.resize( totalsize );
+	prob_table.reserve( totalsize );
 	LoadLUTData(LutDataFile);
 }
 

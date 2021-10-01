@@ -3,6 +3,7 @@
 
 
 void PrintRndmLUT();
+void PrintUniformLUT(int prob = 100);
 
 
 
