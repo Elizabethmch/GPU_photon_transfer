@@ -90,6 +90,7 @@ vector<long> ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, 
 	for (int i = 0; i < depth.size(); i++) {
 		int tmp =(int)( (depth[i] - min_depth) / (max_depth - min_depth) * depthbinnum );
 		depth_in_bin.push_back(tmp);
+		printf("depth id: %d\n", tmp);
 	}
 
 	//Look up table menmory allocation
@@ -147,8 +148,8 @@ vector<long> ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, 
 	for (int i = 0; i < depth.size(); i++) {
 		int tmpcnt = 0;
 		cout << "In depth " << depth[i];
-		for (int j = 0; j < h_GridDivide[i + 1]; j++) {
-			tmpcnt += h_DepthCnt_ary[h_GridDivide[i] + j];
+		for (int j = h_GridDivide[i]; j < h_GridDivide[i + 1]; j++) {
+			tmpcnt += h_DepthCnt_ary[h_GridDivide[i]];
 		}
 		cout << ", incident photon num:" << incident_photon_num[i] << ", absorbed photon num:" << tmpcnt << endl;
 		absorbcnt.push_back(tmpcnt);
