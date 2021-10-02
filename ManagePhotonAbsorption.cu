@@ -1,5 +1,6 @@
 #include "ManagePhotonAbsorption.h"
 #include <cuda_runtime.h>
+#include <iostream>
 #include <curand_kernel.h>
 #include <cooperative_groups.h>
 #include <vector>
@@ -46,6 +47,8 @@ __global__ void SimulatePhotonAbsorption(long* count, int *depthbin_ary, int dep
 	int local_tid = threadIdx.x;
 	int depthid = 0;
 	long countflag = -1;
+	//if (bid == gridDim.x - 1)	printf("enter griddim-1: %d \n", bid);
+
 	for (int i = 0; i < depthsize; i++) {
 		if (bid>grid_divide_points[i] && bid<grid_divide_points[i + 1]) {
 			depthid = depthbin_ary[i];
@@ -60,17 +63,21 @@ __global__ void SimulatePhotonAbsorption(long* count, int *depthbin_ary, int dep
 	if (countflag != 0) {
 		curand_init(seed, tid, 0, &rndstates[tid]);
 		int anglebin = (int)(anglebinsize * curand_uniform_double(&rndstates[tid]));
+		//int anglebin = 0;
 		double prob = lut[depthid * anglebinsize + anglebin];
 		double rndm = curand_uniform_double(&rndstates[tid]);
+		//double rndm = 0;
 		countflag = rndm < prob ? 1 : 0;
 	}
+//countflag = 1;
 
 	countflag = reduce_sum(countflag, cta);
 	//__syncthreads();
 
 	if (threadIdx.x == 0) {
 		count[bid] = countflag;
-		//printf("block id:%i, count: %i\n", bid, countflag);
+		//if(countflag != 1024) printf("bid: %d, count: %d\n", bid, countflag);
+		//if (bid == gridDim.x - 1)	printf("in griddim-1: %d \n",countflag);
 	}
 }
 
@@ -130,24 +137,52 @@ vector<long> ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, 
 	h_GridDivide[0] = 0;
 	for (int dptid = 0; dptid < depth.size(); dptid++) {
 		//Allocate memory and size for gpu, grid and so on
-		int tmp = (incident_photon_num[dptid] - 1) / block.x;
+		int tmp = (incident_photon_num[dptid] - 1) / block.x + 1;
 		grid.x += tmp;
 		h_GridDivide[dptid+1] = grid.x;
 		h_TailPhotonNum[dptid] = incident_photon_num[dptid] % block.x;
+		//printf("In dptid : % d: photon num: %d, block.x: %d, tail photon num : %d\n", dptid, incident_photon_num[dptid], block.x,  h_TailPhotonNum[dptid]);
 	}
+	printf("With grid size:%i, block size:%i\n", grid.x, block.x);
 	CHECK(cudaMalloc((void**)&d_DepthCnt_ary, grid.x * sizeof(long)));
+	h_DepthCnt_ary = (long*)malloc(grid.x * sizeof(long));
+
+
+	//cout << h_DepthCnt_ary[grid.x-1] << endl;
+	//CHECK(cudaMemcpy(h_DepthCnt_ary, d_DepthCnt_ary, grid.x * sizeof(long), cudaMemcpyDeviceToHost));
+	//cout << h_DepthCnt_ary[grid.x-1] << endl;
+
+
 	CHECK(cudaMemcpy((void*)d_GridDivide, (void*)h_GridDivide, (depth.size() + 1) * sizeof(int) , cudaMemcpyHostToDevice));
 	CHECK(cudaMemcpy((void*)d_TailPhotonNum, (void*)h_TailPhotonNum, depth.size() * sizeof(int) , cudaMemcpyHostToDevice));
 
 	//Random number simulation
 	curandStateXORWOW_t* states;
 	CHECK(cudaMalloc((void**)&states, sizeof(curandStateXORWOW_t) * block.x * grid.x));
-	//printf("size of 1 rnd states: %i bytes; total rnd states: %i MB\n", sizeof(curandStateXORWOW_t), sizeof(curandStateXORWOW_t) * block.x * grid.x/1024/1024);
-	SimulatePhotonAbsorption << <grid, block, block.x * sizeof(long) >> > (d_DepthCnt_ary, d_depth_in_bin, depth.size(), lut_size[0], d_lut, d_GridDivide, d_TailPhotonNum, states, time(nullptr));
-	h_DepthCnt_ary = (long*)malloc(grid.x * sizeof(long));
-	h_DepthCnt_ary[0] = 10;
-	h_DepthCnt_ary[1] = 20;
+	//size_t d_DepthCnt_ary_size = grid.x * sizeof(long);
+	//cout << "grid.x: " << grid.x << " size of long: " << sizeof(long) << endl;
+	////cout << "depth cnt ary size: " << d_DepthCnt_ary_size << endl;
+	//printf("sizeof curandState:%d, sizeof curandStateXORWOW_t %d\n", sizeof(curandState), sizeof(curandStateXORWOW));
+	//long long statesize = (long long)sizeof(curandStateXORWOW_t) * block.x * grid.x;
+	//cout << "statesize: " << statesize << endl;
+	//long a = sizeof(curandStateXORWOW_t);
+	//size_t b = a * block.x * grid.x;
+	//long c = b / 1024 / 1024;
+	//size_t d = 4799692800;
+	//printf("With grid size:%i, block size:%i\n", grid.x, block.x);
+	//printf("size of 1 rnd states: %d bytes; total rnd states: %d MB\n", sizeof(curandStateXORWOW_t), sizeof(curandStateXORWOW_t) * block.x * grid.x/1024/1024);
+	//cout << "a " << a << endl;
+	//cout << "b " << b << endl;
+	//cout << "c " << c << endl;
+	//cout << "d " << d << endl;
+	//cout << 97650 * 1024 * 48  << endl;
+	//cout << 97650 * 1024 * 48 / 1024 / 1024 << endl;
+	//cout << 97650 * 48 / 1024 << endl;
+	//cout << h_DepthCnt_ary[grid.x-1] << endl;
+	//CHECK(cudaMemcpy(h_DepthCnt_ary, d_DepthCnt_ary, grid.x * sizeof(long), cudaMemcpyDeviceToHost));
+	//cout << h_DepthCnt_ary[grid.x-1] << endl;
 
+	SimulatePhotonAbsorption << <grid, block, block.x * sizeof(long) >> > (d_DepthCnt_ary, d_depth_in_bin, depth.size(), lut_size[0], d_lut, d_GridDivide, d_TailPhotonNum, states, time(nullptr));
 	//printf("size of shared memory used per block: %i \n", block.x * sizeof(long));
 	//printf("block number: %i\n", grid.x);
 	//printf("Total shared memory used: %i kb\n", block.x * grid.x * sizeof(long) / 1024);
@@ -159,10 +194,10 @@ vector<long> ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, 
 	vector<long> absorbcnt;
 	for (int i = 0; i < depth.size(); i++) {
 		int tmpcnt = 0;
-		cout << "In depth " << depth[i];
 		for (int j = h_GridDivide[i]; j < h_GridDivide[i + 1]; j++) {
-			tmpcnt += h_DepthCnt_ary[h_GridDivide[i]];
+			tmpcnt += h_DepthCnt_ary[j];
 		}
+		cout << "In depth " << depth[i];
 		cout << ", incident photon num:" << incident_photon_num[i] << ", absorbed photon num:" << tmpcnt << endl;
 		absorbcnt.push_back(tmpcnt);
 	}

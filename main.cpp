@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
 	//incident_photon_num.push_back(1e7);	incident_photon_num.push_back(1e7);	incident_photon_num.push_back(1e7);
 	for (int i = 0; i < 5; i++) {
 		incident_depth.push_back(0.5);
-		incident_photon_num.push_back(1e7);
+		incident_photon_num.push_back(1e6);
 	}
 
 	double MAXDPT = 100., MINDPT = 0.;
