@@ -70,6 +70,7 @@ __global__ void SimulatePhotonAbsorption(long* count, int *depthbin_ary, int dep
 
 	if (threadIdx.x == 0) {
 		count[bid] = countflag;
+		//printf("block id:%i, count: %i\n", bid, countflag);
 	}
 }
 
@@ -78,6 +79,8 @@ __global__ void SimulatePhotonAbsorption(long* count, int *depthbin_ary, int dep
 * Calculate number of photon absorbed for given depth & incident photon number
 **************************************************/
 vector<long> ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, vector<long> incident_photon_num, int threadBlockSize) {
+	double iStart, iElaps;
+	iStart = cpuSecond();
 	
 	vector<int> lut_size = look_up_table->getLUTSize();
 	int lut_total_size = 1;
@@ -90,7 +93,7 @@ vector<long> ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, 
 	for (int i = 0; i < depth.size(); i++) {
 		int tmp =(int)( (depth[i] - min_depth) / (max_depth - min_depth) * depthbinnum );
 		depth_in_bin.push_back(tmp);
-		printf("depth id: %d\n", tmp);
+		//printf("depth id: %d\n", tmp);
 	}
 
 	//Look up table menmory allocation
@@ -139,8 +142,17 @@ vector<long> ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, 
 	//Random number simulation
 	curandStateXORWOW_t* states;
 	CHECK(cudaMalloc((void**)&states, sizeof(curandStateXORWOW_t) * block.x * grid.x));
+	//printf("size of 1 rnd states: %i bytes; total rnd states: %i MB\n", sizeof(curandStateXORWOW_t), sizeof(curandStateXORWOW_t) * block.x * grid.x/1024/1024);
 	SimulatePhotonAbsorption << <grid, block, block.x * sizeof(long) >> > (d_DepthCnt_ary, d_depth_in_bin, depth.size(), lut_size[0], d_lut, d_GridDivide, d_TailPhotonNum, states, time(nullptr));
 	h_DepthCnt_ary = (long*)malloc(grid.x * sizeof(long));
+	h_DepthCnt_ary[0] = 10;
+	h_DepthCnt_ary[1] = 20;
+
+	//printf("size of shared memory used per block: %i \n", block.x * sizeof(long));
+	//printf("block number: %i\n", grid.x);
+	//printf("Total shared memory used: %i kb\n", block.x * grid.x * sizeof(long) / 1024);
+	//CHECK(cudaDeviceSynchronize());
+	//printf("size of count array: %i kb\n", grid.x * sizeof(long) / 1024);
 	CHECK(cudaMemcpy(h_DepthCnt_ary, d_DepthCnt_ary, grid.x * sizeof(long), cudaMemcpyDeviceToHost));
 	
 	//collect information
@@ -154,6 +166,11 @@ vector<long> ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, 
 		cout << ", incident photon num:" << incident_photon_num[i] << ", absorbed photon num:" << tmpcnt << endl;
 		absorbcnt.push_back(tmpcnt);
 	}
+
+	CHECK(cudaDeviceSynchronize());
+	iElaps = cpuSecond() - iStart;
+	printf("Time elapsed %f ms\n", iElaps);
+
 
 	CHECK(cudaFree(d_DepthCnt_ary));	free(h_DepthCnt_ary);
 	CHECK(cudaFree(states));
