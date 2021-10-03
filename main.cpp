@@ -54,6 +54,7 @@ int main(int argc, char **argv) {
 	//double iStart, iElaps;
 	//iStart = cpuSecond();
 	ManagePhotonAbsorption* mpa = new ManagePhotonAbsorption(table, MAXDPT, MINDPT);
+
 	//CHECK(cudaDeviceSynchronize());
 	//iElaps = cpuSecond() - iStart;
 	//printf("Time elapsed (main) %f ms\n", iElaps);
