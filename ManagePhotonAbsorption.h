@@ -16,7 +16,7 @@ public:
 	~ManagePhotonAbsorption() {
 	}
 
-	vector<long> getAbsorbedPhotonNum(vector<double> depth, vector<long> incident_photon_num, int threadBlockSize = 1024);
+	vector<long> getAbsorbedPhotonNum(vector<double> depth, vector<long> incident_photon_num, int threadBlockSize = 512);
 
 
 private:

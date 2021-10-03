@@ -5,7 +5,8 @@
 #include "ManagePhotonAbsorption.h"
 #include "MyCudaToolkit.h"
 #include "RandomLUT.h"
-
+#include <helper_cuda.h>
+#include <helper_timer.h>
 
 using namespace std;
 
@@ -29,8 +30,8 @@ int main(int argc, char **argv) {
 	//PrintUniformLUT(30);
 
 	vector<int> dim_size; dim_size.push_back(50); dim_size.push_back(100);
-	//LUT* table = new LUT(2, dim_size, "lut100.dat");
-	LUT* table = new LUT(2, dim_size, "lut80.dat");
+	LUT* table = new LUT(2, dim_size, "lut100.dat");
+	//LUT* table = new LUT(2, dim_size, "lut80.dat");
 	//LUT* table = new LUT(2, dim_size, "lut30.dat");
 	//LUT* table = new LUT();
 	
@@ -43,9 +44,9 @@ int main(int argc, char **argv) {
 	vector<long> incident_photon_num;
 	//incident_depth.push_back(0.5);	incident_depth.push_back(1.7);	incident_depth.push_back(20.7);
 	//incident_photon_num.push_back(1e7);	incident_photon_num.push_back(1e7);	incident_photon_num.push_back(1e7);
-	for (int i = 0; i < 5; i++) {
+	for (int i = 0; i < 1; i++) {
 		incident_depth.push_back(0.5);
-		incident_photon_num.push_back(1e6);
+		incident_photon_num.push_back(1e7);
 	}
 
 	double MAXDPT = 100., MINDPT = 0.;
@@ -63,6 +64,18 @@ int main(int argc, char **argv) {
 
 
 	//simulation start
-	mpa->getAbsorbedPhotonNum(incident_depth, incident_photon_num);
+	double iStart, iElaps;
+	iStart = cpuSecond();
+	StopWatchInterface* timer = NULL;
+	sdkCreateTimer(&timer);
+	sdkStartTimer(&timer);
+
+	auto result = mpa->getAbsorbedPhotonNum(incident_depth, incident_photon_num, 128);
+	
+	iElaps = cpuSecond() - iStart;
+	sdkStopTimer(&timer);
+	double elapsedTime = sdkGetAverageTimerValue(&timer) / 1000.0f;
+	printf("Time elapsed (by my toolkit): %f s\n", iElaps);
+	printf("Time (by helper_time.h) = % .2f(ms),\n", elapsedTime * 1000.0f);
 	return 1;
 }
