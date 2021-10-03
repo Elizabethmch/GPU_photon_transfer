@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
 
 
 
-
+	//mark for test3
 	//CHECK(cudaDeviceSynchronize());
 	//iElaps = cpuSecond() - iStart;
 	//printf("Time elapsed (main) %f ms\n", iElaps);
