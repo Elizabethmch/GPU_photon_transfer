@@ -222,6 +222,7 @@ vector<long> ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, 
 		absorbcnt.push_back(tmpcnt);
 	}
 
+
 	//CHECK(cudaDeviceSynchronize());
 	//iElaps = cpuSecond() - iStart;
 	//printf("Time elapsed %f ms\n", iElaps);
