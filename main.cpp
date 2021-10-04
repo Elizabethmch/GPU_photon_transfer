@@ -30,9 +30,9 @@ int main(int argc, char **argv) {
 	//PrintUniformLUT(30);
 
 	vector<int> dim_size; dim_size.push_back(50); dim_size.push_back(100);
-	LUT* table = new LUT(2, dim_size, "lut100.dat");
+	//LUT* table = new LUT(2, dim_size, "lut100.dat");
 	//LUT* table = new LUT(2, dim_size, "lut80.dat");
-	//LUT* table = new LUT(2, dim_size, "lut30.dat");
+	LUT* table = new LUT(2, dim_size, "lut30.dat");
 	//LUT* table = new LUT();
 	
 	//const vector<double>* test = table->getLUTAddress();
@@ -44,9 +44,9 @@ int main(int argc, char **argv) {
 	vector<long> incident_photon_num;
 	//incident_depth.push_back(0.5);	incident_depth.push_back(1.7);	incident_depth.push_back(20.7);
 	//incident_photon_num.push_back(1e7);	incident_photon_num.push_back(1e7);	incident_photon_num.push_back(1e7);
-	for (int i = 0; i < 1; i++) {
+	for (int i = 0; i < 100; i++) {
 		incident_depth.push_back(0.5);
-		incident_photon_num.push_back(1e7);
+		incident_photon_num.push_back(1e8);
 	}
 
 	double MAXDPT = 100., MINDPT = 0.;
