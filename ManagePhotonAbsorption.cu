@@ -14,6 +14,7 @@ __device__ unsigned int reduce_sum(long in, cg::thread_block cta)
 	extern __shared__ long sdata[];
 
 
+
 	// Perform first level of reduction:
 	// - Write to shared memory
 	unsigned int ltid = threadIdx.x;
