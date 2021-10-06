@@ -32,8 +32,8 @@ int main(int argc, char **argv) {
 	vector<int> dim_size; dim_size.push_back(50); dim_size.push_back(100);
 	//LUT* table = new LUT(2, dim_size, "lut100.dat");
 	//LUT* table = new LUT(2, dim_size, "lut80.dat");
-	LUT* table = new LUT(2, dim_size, "lut30.dat");
-	//LUT* table = new LUT();
+	//LUT* table = new LUT(2, dim_size, "lut30.dat");
+	LUT* table = new LUT();
 	
 	//const vector<double>* test = table->getLUTAddress();
 	//table->PrintLUT();
@@ -44,9 +44,9 @@ int main(int argc, char **argv) {
 	vector<long> incident_photon_num;
 	//incident_depth.push_back(0.5);	incident_depth.push_back(1.7);	incident_depth.push_back(20.7);
 	//incident_photon_num.push_back(1e7);	incident_photon_num.push_back(1e7);	incident_photon_num.push_back(1e7);
-	for (int i = 0; i < 100; i++) {
-		incident_depth.push_back(0.5);
-		incident_photon_num.push_back(1e8);
+	for (int i = 0; i < 1; i++) {
+		/*incident_depth.push_back(0.5);*/	incident_depth.push_back(20.5);
+		/*incident_photon_num.push_back(1e8);	*/incident_photon_num.push_back(1e7);
 	}
 
 	double MAXDPT = 100., MINDPT = 0.;
@@ -62,10 +62,12 @@ int main(int argc, char **argv) {
 	//CHECK(cudaDeviceSynchronize());
 	//iElaps = cpuSecond() - iStart;
 	//printf("Time elapsed (main) %f ms\n", iElaps);
-
+	PrintMeanProbOfDepth(table, 20);
 	//PrintMeanProbOfDepth(table, 0);
 	//PrintMeanProbOfDepth(table, 1);
-	//PrintMeanProbOfDepth(table, 20);
+	//PrintMeanProbOfDepth(table, 2);
+	//PrintMeanProbOfDepth(table, 3);
+	//PrintMeanProbOfDepth(table, 4);
 
 
 	//simulation start
@@ -75,7 +77,10 @@ int main(int argc, char **argv) {
 	sdkCreateTimer(&timer);
 	sdkStartTimer(&timer);
 
-	auto result = mpa->getAbsorbedPhotonNum(incident_depth, incident_photon_num, 128);
+	auto result = mpa->getAbsorbedPhotonNum(incident_depth, incident_photon_num, 512);
+	//mpa->getAbsorbedPhotonNum(incident_depth, incident_photon_num, 512);
+	//mpa->getAbsorbedPhotonNum(incident_depth, incident_photon_num, 512);
+
 	
 	iElaps = cpuSecond() - iStart;
 	sdkStopTimer(&timer);

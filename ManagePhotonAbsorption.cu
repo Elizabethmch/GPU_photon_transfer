@@ -60,7 +60,7 @@ __global__ void SimulatePhotonAbsorption(long* count, int* depthbin_ary, int dep
 		for (unsigned photonid = tid; photonid < photon_num[depthid]; photonid += step) {
 			int anglebin = (int)(anglebinsize * curand_uniform_double(&localState));
 			//int anglebin = 0;
-			double prob = lut[depthid * anglebinsize + anglebin];
+			double prob = lut[depthbin_ary[depthid] * anglebinsize + anglebin];
 			double rndm = curand_uniform_double(&localState);
 			//double rndm = 0;
 			//countflag = rndm < prob ? 1 : 0;
@@ -237,7 +237,9 @@ vector<long> ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, 
 	//CHECK(cudaMemcpy(h_DepthCnt_ary, d_DepthCnt_ary, grid.x * sizeof(long), cudaMemcpyDeviceToHost));
 	//cout << h_DepthCnt_ary[grid.x-1] << endl;
 
-	SimulatePhotonAbsorption << <grid, block, block.x * sizeof(long) >> > (d_DepthCnt_ary, d_depth_in_bin, depth.size(), lut_size[0], d_lut, d_photonnum, states, time(nullptr));
+	//unsigned long long rndmseed = 1234;
+	unsigned long long rndmseed = time(nullptr);
+	SimulatePhotonAbsorption << <grid, block, block.x * sizeof(long) >> > (d_DepthCnt_ary, d_depth_in_bin, depth.size(), lut_size[0], d_lut, d_photonnum, states, rndmseed );
 	cudaError_t cudaStatus = cudaGetLastError();
 	CHECK(cudaStatus);
 	//printf("size of shared memory used per block: %i \n", block.x * sizeof(long));
@@ -261,7 +263,7 @@ vector<long> ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, 
 		for (int j = 0; j < grid.x; j++) {
 			tmpcnt += h_DepthCnt_ary[i * grid.x + j];
 		}
-		cout << "In depth " << depth[i];
+		cout << "In depth " << depth[i] << ", depth bin num: "<< depth_in_bin[i];
 		cout << ", incident photon num:" << incident_photon_num[i] << ", absorbed photon num:" << tmpcnt << endl;
 		absorbcnt.push_back(tmpcnt);
 	}
