@@ -5,8 +5,8 @@
 using namespace std;
 
 LUT::LUT() : dim(2), lut_name("lut.dat"){
-	size.push_back(50);		// Direction bin number
-	size.push_back(100);	// Depth bin number
+	size.push_back(100);		// Direction bin number
+	size.push_back(50);	// Depth bin number
 	LoadLUTData();
 }
 
@@ -42,6 +42,7 @@ void LUT::LoadLUTData(string DataFileName){
 		//cout << "datas: " << tmpdata << "	";
 		prob_table.push_back(tmpdata);
 	}
+	lut_name = DataFileName;
 }
 
 void LUT::PrintLUT(){

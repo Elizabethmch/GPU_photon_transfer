@@ -118,7 +118,7 @@ __global__ void SimulatePhotonAbsorption(long* count, int* depthbin_ary, int dep
 /**************************************************
 * Calculate number of photon absorbed for given depth & incident photon number
 **************************************************/
-vector<long> ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, vector<long> incident_photon_num, int threadBlockSize) {
+vector<long> ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, vector<long> incident_photon_num) {
 	//cudaDeviceReset();
 	//double iStart, iElaps;
 	//iStart = cpuSecond();
@@ -135,7 +135,7 @@ vector<long> ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, 
 	vector<int> depth_in_bin;
 
 	//The last entry for lut_size is num of bins for depth
-	int depthbinnum = lut_size[lut_size.size() - 1];
+	int depthbinnum = lut_size[0];
 	for (int i = 0; i < depth.size(); i++) {
 		int tmp = (int)((depth[i] - min_depth) / (max_depth - min_depth) * depthbinnum);
 		depth_in_bin.push_back(tmp);
@@ -239,7 +239,7 @@ vector<long> ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, 
 
 	//unsigned long long rndmseed = 1234;
 	unsigned long long rndmseed = time(nullptr);
-	SimulatePhotonAbsorption << <grid, block, block.x * sizeof(long) >> > (d_DepthCnt_ary, d_depth_in_bin, depth.size(), lut_size[0], d_lut, d_photonnum, states, rndmseed );
+	SimulatePhotonAbsorption << <grid, block, block.x * sizeof(long) >> > (d_DepthCnt_ary, d_depth_in_bin, depth.size(), lut_size[1], d_lut, d_photonnum, states, rndmseed );
 	cudaError_t cudaStatus = cudaGetLastError();
 	CHECK(cudaStatus);
 	//printf("size of shared memory used per block: %i \n", block.x * sizeof(long));
