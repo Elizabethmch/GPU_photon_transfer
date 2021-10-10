@@ -10,13 +10,13 @@ using std::vector;
 class ManagePhotonAbsorption
 {
 public:
-	ManagePhotonAbsorption(LUT* lut, double maxdepth, double mindepth, int blocksize) : look_up_table(lut),
+	ManagePhotonAbsorption(LUT* lut, double maxdepth, double mindepth, int blocksize = 512) : look_up_table(lut),
 		max_depth(maxdepth), min_depth(mindepth), threadBlockSize(blocksize) {
 	}
 	~ManagePhotonAbsorption() {
 	}
 
-	vector<long> getAbsorbedPhotonNum(vector<double> depth, vector<long> incident_photon_num);
+	vector<long> getAbsorbedPhotonNum(vector<double> depth, vector<long> incident_photon_num, unsigned int rndmseed = 0);
 
 
 private:

@@ -40,7 +40,7 @@ __device__ unsigned int reduce_sum(long in, cg::thread_block cta)
 }
 
 __global__ void SimulatePhotonAbsorption(long* count, int* depthbin_ary, int depthsize, int anglebinsize, double* lut, 
-										long* photon_num, curandStateXORWOW_t* rndstates, unsigned long long seed) {
+										long* photon_num, curandStateXORWOW_t* rndstates, unsigned int seed) {
 	// Handle to thread block group
 	cg::thread_block cta = cg::this_thread_block();
 
@@ -118,7 +118,7 @@ __global__ void SimulatePhotonAbsorption(long* count, int* depthbin_ary, int dep
 /**************************************************
 * Calculate number of photon absorbed for given depth & incident photon number
 **************************************************/
-vector<long> ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, vector<long> incident_photon_num) {
+vector<long> ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, vector<long> incident_photon_num, unsigned int rndmseed) {
 	//cudaDeviceReset();
 	//double iStart, iElaps;
 	//iStart = cpuSecond();
@@ -237,8 +237,9 @@ vector<long> ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, 
 	//CHECK(cudaMemcpy(h_DepthCnt_ary, d_DepthCnt_ary, grid.x * sizeof(long), cudaMemcpyDeviceToHost));
 	//cout << h_DepthCnt_ary[grid.x-1] << endl;
 
-	//unsigned long long rndmseed = 1234;
-	unsigned long long rndmseed = time(nullptr);
+	//unsigned int rndmseed = 1234;
+	//unsigned int rndmseed = time(nullptr);
+	if (rndmseed == 0) rndmseed = time(nullptr);
 	SimulatePhotonAbsorption << <grid, block, block.x * sizeof(long) >> > (d_DepthCnt_ary, d_depth_in_bin, depth.size(), lut_size[1], d_lut, d_photonnum, states, rndmseed );
 	cudaError_t cudaStatus = cudaGetLastError();
 	CHECK(cudaStatus);

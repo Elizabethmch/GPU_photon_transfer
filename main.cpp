@@ -7,7 +7,7 @@
 #include "MyCudaToolkit.h"
 #include "RandomLUT.h"
 #include <helper_cuda.h>
-#include <helper_timer.h>
+//#include <helper_timer.h>
 
 using namespace std;
 
@@ -55,6 +55,8 @@ void showHelp(int argc, const char** argv)
 }
 
 int main(int argc, char **argv) {
+	double iStart, iElaps;
+	iStart = cpuSecond();
 
 	using std::invalid_argument;
 	using std::string;
@@ -70,6 +72,7 @@ int main(int argc, char **argv) {
 	int sets_num = 1;
 	int photon_num = 1e7;
 	int block_size = 512;
+	unsigned int rndmseed = 0;
 	bool verification_mode = false;
 	vector<int> dim_size; dim_size.push_back(100); dim_size.push_back(50);
 	LUT* table;
@@ -85,7 +88,7 @@ int main(int argc, char **argv) {
 	{
 		char* value;
 
-		if (getCmdLineArgumentString(argc, argv, "lut", &value))
+		if (getCmdLineArgumentString(argc, (const char**) argv, "lut", &value))
 		{
 			table = new LUT(2, dim_size, value);
 		}
@@ -94,7 +97,7 @@ int main(int argc, char **argv) {
 			table = new LUT();
 		}
 
-		if (getCmdLineArgumentString(argc, argv, "sim-num", &value))
+		if (getCmdLineArgumentString(argc, (const char**) argv, "sim-num", &value))
 		{
 			sim_num = (int)atoi(value);
 		}
@@ -103,7 +106,7 @@ int main(int argc, char **argv) {
 			sim_num = 1;
 		}
 
-		if (getCmdLineArgumentString(argc, argv, "sets-num", &value))
+		if (getCmdLineArgumentString(argc, (const char**)argv, "sets-num", &value))
 		{
 			sets_num = (int)atoi(value);
 		}
@@ -112,7 +115,7 @@ int main(int argc, char **argv) {
 			sets_num = 1;
 		}
 
-		if (getCmdLineArgumentString(argc, argv, "photon-num", &value))
+		if (getCmdLineArgumentString(argc, (const char**)argv, "photon-num", &value))
 		{
 			photon_num = (int)atoi(value);
 		}
@@ -126,8 +129,25 @@ int main(int argc, char **argv) {
 			printf("Verification mode enabled\n");
 			verification_mode = true;
 		}
-	}
 
+		if (getCmdLineArgumentString(argc, (const char**)argv, "block-size", &value))
+		{
+			block_size = (int)atoi(value);
+		}
+		else
+		{
+			block_size = 512;
+		}
+
+		if (getCmdLineArgumentString(argc, (const char**)argv, "seed", &value))
+		{
+			rndmseed = (int)atoi(value);
+		}
+		else
+		{
+			rndmseed = 0;
+		}
+	}
 	catch (invalid_argument& e)
 	{
 		printf("invalid command line argument (%s)\n", e.what());
@@ -137,39 +157,30 @@ int main(int argc, char **argv) {
 	//incident photon configuration
 	vector<double> incident_depth;
 	vector<long> incident_photon_num;
-	//incident_depth.push_back(0.5);	incident_depth.push_back(1.7);	incident_depth.push_back(20.7);
-	//incident_photon_num.push_back(1e7);	incident_photon_num.push_back(1e7);	incident_photon_num.push_back(1e7);
-	for (int i = 0; i < 100; i++) {
-		/*incident_depth.push_back(0.5);*/	incident_depth.push_back(20.5);
-		/*incident_photon_num.push_back(1e8);	*/incident_photon_num.push_back(1e7);
+	double depth = 0.5;
+	for (int i = 0; i < sets_num; i++) {
+		incident_depth.push_back(depth);
+		incident_photon_num.push_back(photon_num);
 	}
 
 	double MAXDPT = 100., MINDPT = 0.;
 
-	ManagePhotonAbsorption* mpa = new ManagePhotonAbsorption(table, MAXDPT, MINDPT);
+	ManagePhotonAbsorption* mpa = new ManagePhotonAbsorption(table, MAXDPT, MINDPT, block_size);
 
-
-	PrintMeanProbOfDepth(table, 20);
-	//PrintMeanProbOfDepth(table, 0);
-	//PrintMeanProbOfDepth(table, 1);
-	//PrintMeanProbOfDepth(table, 2);
-	//PrintMeanProbOfDepth(table, 3);
-	//PrintMeanProbOfDepth(table, 4);
 
 
 	//simulation start
-	double iStart, iElaps;
-	iStart = cpuSecond();
-	StopWatchInterface* timer = NULL;
-	sdkCreateTimer(&timer);
-	sdkStartTimer(&timer);
+	for (int i = 0; i < sim_num; i++) {
+		auto result = mpa->getAbsorbedPhotonNum(incident_depth, incident_photon_num, rndmseed);
+	}
 
-	auto result = mpa->getAbsorbedPhotonNum(incident_depth, incident_photon_num, 512);
+	if (verification_mode == true) {
+		PrintMeanProbOfDepth(table, 0);
+		int depthid = (int)((depth - MINDPT) / (MAXDPT - MINDPT) * 100;
+		printf("depth id: %d, depth vector size: %d, photon number in vec: %d\n", depthid, incident_depth.size(), incident_photon_num[0] );
+	}
 	
 	iElaps = cpuSecond() - iStart;
-	sdkStopTimer(&timer);
-	double elapsedTime = sdkGetAverageTimerValue(&timer) / 1000.0f;
 	printf("Time elapsed (by my toolkit): %f s\n", iElaps);
-	printf("Time (by helper_time.h) = % .2f(ms),\n", elapsedTime * 1000.0f);
 	return 1;
 }
