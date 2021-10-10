@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
 	vector<long> incident_photon_num;
 	//incident_depth.push_back(0.5);	incident_depth.push_back(1.7);	incident_depth.push_back(20.7);
 	//incident_photon_num.push_back(1e7);	incident_photon_num.push_back(1e7);	incident_photon_num.push_back(1e7);
-	for (int i = 0; i < 1; i++) {
+	for (int i = 0; i < 100; i++) {
 		/*incident_depth.push_back(0.5);*/	incident_depth.push_back(20.5);
 		/*incident_photon_num.push_back(1e8);	*/incident_photon_num.push_back(1e7);
 	}
