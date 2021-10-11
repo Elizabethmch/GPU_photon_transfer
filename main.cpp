@@ -124,7 +124,7 @@ int main(int argc, char **argv) {
 			photon_num = 1e7;
 		}
 
-		if (checkCmdLineFlag(argc, (const char**)argv, "time_use"))
+		if (checkCmdLineFlag(argc, (const char**)argv, "time-use"))
 		{
 			time_use = true;
 		}
