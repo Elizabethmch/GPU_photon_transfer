@@ -47,6 +47,7 @@ void showHelp(int argc, const char** argv)
 	cout << "    " << setw(20) << "--sim-num=<N>" << "Specify simulation number" << endl;
 	cout << "    " << setw(20) << "--sets-num=<N>" << "Specify number of sets in each simulation" << endl;
 	cout << "    " << setw(20) << "--photon-num=<N>" << "Specify photon number in each sets" << endl;
+	cout << "    " << setw(20) << "--time-use" << "Printing time consumption for each sector" << endl;
 	cout << "    " << setw(20) << "--verification" << "Enable verfication mode" << endl;
 	cout << "    " << setw(20) << "--block-size=<N>" << "Specify number of threads per block" << endl;
 	cout << "    " << setw(20) << "--seed=<N>" << "Specify the seed to use for the random number generator" << endl;
@@ -55,8 +56,9 @@ void showHelp(int argc, const char** argv)
 }
 
 int main(int argc, char **argv) {
-	double iStart, iElaps;
-	iStart = cpuSecond();
+	double mainStart, mainElaps;
+	mainStart = cpuSecond();
+
 
 	using std::invalid_argument;
 	using std::string;
@@ -73,6 +75,7 @@ int main(int argc, char **argv) {
 	int photon_num = 1e7;
 	int block_size = 512;
 	unsigned int rndmseed = 0;
+	bool time_use = false;
 	bool verification_mode = false;
 	vector<int> dim_size; dim_size.push_back(100); dim_size.push_back(50);
 	LUT* table;
@@ -80,9 +83,6 @@ int main(int argc, char **argv) {
 	//LUT* table = new LUT(2, dim_size, "lut80.dat");
 	//LUT* table = new LUT(2, dim_size, "lut30.dat");
 	//LUT* table = new LUT();
-
-
-
 
 	try
 	{
@@ -122,6 +122,11 @@ int main(int argc, char **argv) {
 		else
 		{
 			photon_num = 1e7;
+		}
+
+		if (checkCmdLineFlag(argc, (const char**)argv, "time_use"))
+		{
+			time_use = true;
 		}
 
 		if (checkCmdLineFlag(argc, (const char**)argv, "verification"))
@@ -181,6 +186,10 @@ int main(int argc, char **argv) {
 		cout << "Average absorbed photon number during simulation " << i << ": " << tmpresult / incident_depth.size() << endl;
 	}
 
+	if (time_use == true) {
+		mpa->PrintTimeConsume();
+	}
+
 	//verification mode
 	if (verification_mode == true) {
 		
@@ -192,7 +201,7 @@ int main(int argc, char **argv) {
 		}
 	}
 	
-	iElaps = cpuSecond() - iStart;
-	printf("Time elapsed (by my toolkit): %f s\n", iElaps);
+	mainElaps = cpuSecond() - mainStart;
+	printf("Total time consumption for whole program: %f s\n", mainElaps);
 	return 1;
 }
