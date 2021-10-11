@@ -23,6 +23,7 @@ public:
 	}
 
 	vector<long> getAbsorbedPhotonNum(vector<double> depth, vector<long> incident_photon_num, unsigned int rndmseed = 0);
+	void PrintTimeConsume();
 
 
 private:
@@ -33,7 +34,10 @@ private:
 	int totalThreadNum;
 	double* d_lut;	//look up table data for GPU
 	curandStateXORWOW_t* states;
-
+	double kernelStart;
+	double kernelElaps;
+	double transStart;
+	double transElaps;
 };
 #endif
 

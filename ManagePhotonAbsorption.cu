@@ -103,7 +103,8 @@ vector<long> ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, 
 	}
 
 	//Memory allocation in GPU for photonnum and depth_in_bin
-
+	
+	transStart = cpuSecond();
 	long* d_photonnum;
 	CHECK(cudaMalloc((void**)&d_photonnum, depth.size() * sizeof(long)));
 	CHECK(cudaMemcpy((void*)d_photonnum, (void*)&(incident_photon_num[0]), depth.size() * sizeof(long), cudaMemcpyHostToDevice));
@@ -111,7 +112,7 @@ vector<long> ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, 
 	int* d_depth_in_bin;
 	CHECK(cudaMalloc((void**)&d_depth_in_bin, depth.size() * sizeof(int)));
 	CHECK(cudaMemcpy((void*)d_depth_in_bin, (void*)&(depth_in_bin[0]), depth.size() * sizeof(int), cudaMemcpyHostToDevice));
-
+	transElaps += (cpuSecond() - transStart);
 	
 	//DepthCnt_ary: count absorbed photon for each depth	
 	long* h_DepthCnt_ary, * d_DepthCnt_ary;
@@ -131,22 +132,29 @@ vector<long> ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, 
 	CHECK(cudaMalloc((void**)&d_DepthCnt_ary, count_array_size));
 	h_DepthCnt_ary = (long*)malloc(count_array_size);
 
-
 	//Random number simulation
 	if (totalThreadNum < grid.x * block.x) {
 		totalThreadNum = grid.x * block.x;
+		transStart = cpuSecond();
 		CHECK(cudaMalloc((void**)&states, sizeof(curandStateXORWOW_t) * block.x * grid.x));
+		transElaps += (cpuSecond() - transStart);
 	}
 
 
 	if (rndmseed == 0) rndmseed = time(nullptr);
+
+	kernelStart = cpuSecond();
 	SimulatePhotonAbsorption << <grid, block, block.x * sizeof(long) >> > (d_DepthCnt_ary, d_depth_in_bin, depth.size(), lut_size[1], d_lut, d_photonnum, states, rndmseed );
+	kernelElaps += (kernelStart - cpuSecond());
+	
 	cudaError_t cudaStatus = cudaGetLastError();
 	CHECK(cudaStatus);
 
 
 	//collect results
+	transStart = cpuSecond();
 	CHECK(cudaMemcpy(h_DepthCnt_ary, d_DepthCnt_ary, count_array_size, cudaMemcpyDeviceToHost));
+	transElaps += (cpuSecond() - transStart);
 
 	vector<long> absorbcnt;
 	for (int i = 0; i < depth.size(); i++) {
@@ -166,14 +174,23 @@ vector<long> ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, 
 }
 
 ManagePhotonAbsorption::ManagePhotonAbsorption(LUT* lut, double maxdepth, double mindepth, int blocksize) : look_up_table(lut),
-max_depth(maxdepth), min_depth(mindepth), threadBlockSize(blocksize), totalThreadNum(0){
+						max_depth(maxdepth), min_depth(mindepth), threadBlockSize(blocksize), totalThreadNum(0), kernelStart(0),
+						kernelElaps(0), transStart(0), transElaps(0){
+
 	const vector<double>* h_lut_ptr = look_up_table->getLUTAddress();
 	vector<int> lut_size = look_up_table->getLUTSize();
 	int lut_total_size = 1;
 	for (int i = 0; i < lut_size.size(); i++)	lut_total_size *= lut_size[i];
 
+	transStart = cpuSecond();
 	CHECK(cudaMalloc((void**)&d_lut, lut_total_size * sizeof(double)));
 	CHECK(cudaMemcpy((void*)d_lut, &((*h_lut_ptr)[0]), lut_total_size * sizeof(double), cudaMemcpyHostToDevice));
+	transElaps += (cpuSecond() - transStart);	
 }
 
+
+void ManagePhotonAbsorption::PrintTimeConsume() {
+	printf("Total time consumption for CPU-GPU transfer: %f s\n", transElaps);
+	printf("Total time consumption for kernel function: %f s\n", kernelElaps);
+}
 
