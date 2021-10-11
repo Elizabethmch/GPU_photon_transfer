@@ -57,6 +57,9 @@ void showHelp(int argc, const char** argv)
 int main(int argc, char **argv) {
 	double iStart, iElaps;
 	iStart = cpuSecond();
+	//double mainStart, mainElaps;
+	//double gpuStart, gpuElaps;
+	//double gputransStart, gputransEnd;
 
 	using std::invalid_argument;
 	using std::string;
