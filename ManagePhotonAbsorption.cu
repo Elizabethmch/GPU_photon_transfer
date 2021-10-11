@@ -144,11 +144,11 @@ vector<long> ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, 
 	if (rndmseed == 0) rndmseed = time(nullptr);
 
 	kernelStart = cpuSecond();
-	SimulatePhotonAbsorption << <grid, block, block.x * sizeof(long) >> > (d_DepthCnt_ary, d_depth_in_bin, depth.size(), lut_size[1], d_lut, d_photonnum, states, rndmseed );
-	kernelElaps += (kernelStart - cpuSecond());
-	
+	SimulatePhotonAbsorption << <grid, block, block.x * sizeof(long) >> > (d_DepthCnt_ary, d_depth_in_bin, depth.size(), lut_size[1], d_lut, d_photonnum, states, rndmseed );	
 	cudaError_t cudaStatus = cudaGetLastError();
 	CHECK(cudaStatus);
+	CHECK(cudaDeviceSynchronize());
+	kernelElaps += (cpuSecond() - kernelStart );
 
 
 	//collect results
