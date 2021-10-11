@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <vector>
 #include <cuda_runtime.h>
 #include "LUT.h"
@@ -6,76 +7,192 @@
 #include "MyCudaToolkit.h"
 #include "RandomLUT.h"
 #include <helper_cuda.h>
-#include <helper_timer.h>
 
 using namespace std;
 
+/// <summary>
+/// Print the everage probability of the given depth from LUT
+/// </summary>
+/// <param name="lut"></param>	LookUpTable address
+/// <param name="depthid"></param>	Depth number
 void PrintMeanProbOfDepth(LUT* lut, int depthid) {
 	const vector<double>* tableptr = lut->getLUTAddress();
 	auto sizevec = lut->getLUTSize();
-	int anglebinsize = sizevec[0];
+	int anglebinsize = sizevec[1];
 
 	double mean_prob = 0;
 	for (int i = 0; i < anglebinsize; i++) {
-		mean_prob += (*tableptr)[anglebinsize * depthid + i];
+		int dataid = anglebinsize * depthid + i;
+		mean_prob += (*tableptr)[dataid];
 	}
 	mean_prob /= anglebinsize;
 	printf("Mean probability of depth %d is %f\n", depthid, mean_prob);
 }
 
-int main(int argc, char **argv) {
-	//PrintRndmLUT();
-	//PrintUniformLUT(100);
-	//PrintUniformLUT(80);
-	//PrintUniformLUT(30);
+void showHelp(int argc, const char** argv)
+{
+	using std::cout;
+	using std::endl;
+	using std::left;
+	using std::setw;
 
-	vector<int> dim_size; dim_size.push_back(50); dim_size.push_back(100);
-	LUT* table = new LUT(2, dim_size, "lut100.dat");
+	if (argc > 0)
+	{
+		cout << endl << argv[0] << endl;
+	}
+
+	cout << endl << "Syntax:" << endl;
+	cout << left;
+	cout << "    " << setw(20) << "--lut=<lut.dat>" << "Specify look up table data file" << endl;
+	cout << "    " << setw(20) << "--sim-num=<N>" << "Specify simulation number" << endl;
+	cout << "    " << setw(20) << "--sets-num=<N>" << "Specify number of sets in each simulation" << endl;
+	cout << "    " << setw(20) << "--photon-num=<N>" << "Specify photon number in each sets" << endl;
+	cout << "    " << setw(20) << "--verification" << "Enable verfication mode" << endl;
+	cout << "    " << setw(20) << "--block-size=<N>" << "Specify number of threads per block" << endl;
+	cout << "    " << setw(20) << "--seed=<N>" << "Specify the seed to use for the random number generator" << endl;
+	cout << endl;
+
+}
+
+int main(int argc, char **argv) {
+	double iStart, iElaps;
+	iStart = cpuSecond();
+
+	using std::invalid_argument;
+	using std::string;
+
+	if (checkCmdLineFlag(argc, (const char**)argv, "help"))
+	{
+		printf("Displaying help on console\n");
+		showHelp(argc, (const char**)argv);
+		exit(EXIT_SUCCESS);
+	}
+
+	int sim_num = 1;
+	int sets_num = 1;
+	int photon_num = 1e7;
+	int block_size = 512;
+	unsigned int rndmseed = 0;
+	bool verification_mode = false;
+	vector<int> dim_size; dim_size.push_back(100); dim_size.push_back(50);
+	LUT* table;
+	//LUT* table = new LUT(2, dim_size, "lut100.dat");
 	//LUT* table = new LUT(2, dim_size, "lut80.dat");
 	//LUT* table = new LUT(2, dim_size, "lut30.dat");
 	//LUT* table = new LUT();
-	
-	//const vector<double>* test = table->getLUTAddress();
-	//table->PrintLUT();
 
+
+
+
+	try
+	{
+		char* value;
+
+		if (getCmdLineArgumentString(argc, (const char**) argv, "lut", &value))
+		{
+			table = new LUT(2, dim_size, value);
+		}
+		else
+		{
+			table = new LUT();
+		}
+
+		if (getCmdLineArgumentString(argc, (const char**) argv, "sim-num", &value))
+		{
+			sim_num = (int)atoi(value);
+		}
+		else
+		{
+			sim_num = 1;
+		}
+
+		if (getCmdLineArgumentString(argc, (const char**)argv, "sets-num", &value))
+		{
+			sets_num = (int)atoi(value);
+		}
+		else
+		{
+			sets_num = 1;
+		}
+
+		if (getCmdLineArgumentString(argc, (const char**)argv, "photon-num", &value))
+		{
+			photon_num = (int)atoi(value);
+		}
+		else
+		{
+			photon_num = 1e7;
+		}
+
+		if (checkCmdLineFlag(argc, (const char**)argv, "verification"))
+		{
+			printf("Verification mode enabled\n");
+			verification_mode = true;
+		}
+
+		if (getCmdLineArgumentString(argc, (const char**)argv, "block-size", &value))
+		{
+			block_size = (int)atoi(value);
+		}
+		else
+		{
+			block_size = 512;
+		}
+
+		if (getCmdLineArgumentString(argc, (const char**)argv, "seed", &value))
+		{
+			rndmseed = (int)atoi(value);
+		}
+		else
+		{
+			rndmseed = 0;
+		}
+	}
+	catch (invalid_argument& e)
+	{
+		printf("invalid command line argument (%s)\n", e.what());
+		exit(EXIT_FAILURE);
+	}
 
 	//incident photon configuration
 	vector<double> incident_depth;
 	vector<long> incident_photon_num;
-	//incident_depth.push_back(0.5);	incident_depth.push_back(1.7);	incident_depth.push_back(20.7);
-	//incident_photon_num.push_back(1e7);	incident_photon_num.push_back(1e7);	incident_photon_num.push_back(1e7);
-	for (int i = 0; i < 1; i++) {
-		incident_depth.push_back(0.5);
-		incident_photon_num.push_back(1e7);
+	double depth = 0.5;
+	for (int i = 0; i < sets_num; i++) {
+		incident_depth.push_back(depth);
+		incident_photon_num.push_back(photon_num);
 	}
 
 	double MAXDPT = 100., MINDPT = 0.;
 
-	//double iStart, iElaps;
-	//iStart = cpuSecond();
-	ManagePhotonAbsorption* mpa = new ManagePhotonAbsorption(table, MAXDPT, MINDPT);
-	//CHECK(cudaDeviceSynchronize());
-	//iElaps = cpuSecond() - iStart;
-	//printf("Time elapsed (main) %f ms\n", iElaps);
+	ManagePhotonAbsorption* mpa = new ManagePhotonAbsorption(table, MAXDPT, MINDPT, block_size);
 
-	//PrintMeanProbOfDepth(table, 0);
-	//PrintMeanProbOfDepth(table, 1);
-	//PrintMeanProbOfDepth(table, 20);
 
 
 	//simulation start
-	double iStart, iElaps;
-	iStart = cpuSecond();
-	StopWatchInterface* timer = NULL;
-	sdkCreateTimer(&timer);
-	sdkStartTimer(&timer);
+	printf("depth vector size: %d, photon number in vec: %d\n", (int)incident_depth.size(), incident_photon_num[0]);
+	vector<long> result;
+	for (int i = 0; i < sim_num; i++) {
+		result = mpa->getAbsorbedPhotonNum(incident_depth, incident_photon_num, rndmseed);
+		double tmpresult = 0;
+		for (int j = 0; j < incident_depth.size(); j++) {
+			tmpresult += result[j];
+		}
+		cout << "Average absorbed photon number during simulation " << i << ": " << tmpresult / incident_depth.size() << endl;
+	}
 
-	auto result = mpa->getAbsorbedPhotonNum(incident_depth, incident_photon_num, 128);
+	//verification mode
+	if (verification_mode == true) {
+		
+		printf("absorbed photon num:\n");
+		for (int i = 0; i < incident_depth.size(); i++) {
+			int tmpdepthid = (int)((incident_depth[i] - MINDPT) / (MAXDPT - MINDPT) * 100);
+			PrintMeanProbOfDepth(table, tmpdepthid);
+			printf("In set %d, depthid %d, absorbed photon num: %d\n", i, tmpdepthid, result[i]);
+		}
+	}
 	
 	iElaps = cpuSecond() - iStart;
-	sdkStopTimer(&timer);
-	double elapsedTime = sdkGetAverageTimerValue(&timer) / 1000.0f;
 	printf("Time elapsed (by my toolkit): %f s\n", iElaps);
-	printf("Time (by helper_time.h) = % .2f(ms),\n", elapsedTime * 1000.0f);
 	return 1;
 }
