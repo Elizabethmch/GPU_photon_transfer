@@ -81,9 +81,6 @@ int main(int argc, char **argv) {
 	//LUT* table = new LUT(2, dim_size, "lut30.dat");
 	//LUT* table = new LUT();
 
-
-
-
 	try
 	{
 		char* value;

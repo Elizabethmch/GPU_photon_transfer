@@ -128,7 +128,7 @@ vector<long> ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, 
 	dim3 block, grid;
 	block.x = threadBlockSize;
 	grid.x = 0;
-	grid.x = (1e7 - 1) / block.x + 1;
+	grid.x = (incident_photon_num[0] - 1) / block.x + 1;
 	unsigned int blocksPerSM = 10;
 	unsigned int numSMs = deviceProperties.multiProcessorCount;
 	while (grid.x > 2 * blocksPerSM * numSMs)
