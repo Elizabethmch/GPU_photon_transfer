@@ -7,7 +7,6 @@
 #include "MyCudaToolkit.h"
 #include "RandomLUT.h"
 #include <helper_cuda.h>
-//#include <helper_timer.h>
 
 using namespace std;
 
@@ -19,11 +18,12 @@ using namespace std;
 void PrintMeanProbOfDepth(LUT* lut, int depthid) {
 	const vector<double>* tableptr = lut->getLUTAddress();
 	auto sizevec = lut->getLUTSize();
-	int anglebinsize = sizevec[0];
+	int anglebinsize = sizevec[1];
 
 	double mean_prob = 0;
 	for (int i = 0; i < anglebinsize; i++) {
-		mean_prob += (*tableptr)[anglebinsize * depthid + i];
+		int dataid = anglebinsize * depthid + i;
+		mean_prob += (*tableptr)[dataid];
 	}
 	mean_prob /= anglebinsize;
 	printf("Mean probability of depth %d is %f\n", depthid, mean_prob);
@@ -170,14 +170,26 @@ int main(int argc, char **argv) {
 
 
 	//simulation start
+	printf("depth vector size: %d, photon number in vec: %d\n", (int)incident_depth.size(), incident_photon_num[0]);
+	vector<long> result;
 	for (int i = 0; i < sim_num; i++) {
-		auto result = mpa->getAbsorbedPhotonNum(incident_depth, incident_photon_num, rndmseed);
+		result = mpa->getAbsorbedPhotonNum(incident_depth, incident_photon_num, rndmseed);
+		double tmpresult = 0;
+		for (int j = 0; j < incident_depth.size(); j++) {
+			tmpresult += result[j];
+		}
+		cout << "Average absorbed photon number during simulation " << i << ": " << tmpresult / incident_depth.size() << endl;
 	}
 
+	//verification mode
 	if (verification_mode == true) {
-		PrintMeanProbOfDepth(table, 0);
-		int depthid = (int)((depth - MINDPT) / (MAXDPT - MINDPT) * 100);
-		printf("depth id: %d, depth vector size: %d, photon number in vec: %d\n", depthid, incident_depth.size(), incident_photon_num[0] );
+		
+		printf("absorbed photon num:\n");
+		for (int i = 0; i < incident_depth.size(); i++) {
+			int tmpdepthid = (int)((incident_depth[i] - MINDPT) / (MAXDPT - MINDPT) * 100);
+			PrintMeanProbOfDepth(table, tmpdepthid);
+			printf("In set %d, depthid %d, absorbed photon num: %d\n", i, tmpdepthid, result[i]);
+		}
 	}
 	
 	iElaps = cpuSecond() - iStart;
