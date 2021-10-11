@@ -7,6 +7,9 @@
 
 using std::vector;
 
+/// <summary>
+/// Simulate photon absorption
+/// </summary>
 class ManagePhotonAbsorption
 {
 public:

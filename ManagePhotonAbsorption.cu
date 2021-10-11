@@ -1,6 +1,6 @@
 #include "ManagePhotonAbsorption.h"
 #include <cuda_runtime.h>
-//#include <iostream>
+#include <iostream>
 #include <curand_kernel.h>
 #include <cooperative_groups.h>
 #include <vector>
@@ -17,18 +17,15 @@ __device__ unsigned int reduce_sum(long in, cg::thread_block cta)
 	// Perform first level of reduction:
 	// - Write to shared memory
 	unsigned int ltid = threadIdx.x;
-	//printf("1");
 	sdata[ltid] = in;
 	if (in == -1) printf("error: countflag not initialzed\n");
 
 	cg::sync(cta);
-	//printf("2");
-		// Do reduction in shared mem
+	// Do reduction in shared mem
 	for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1)
 	{
 		if (ltid < s)
 		{
-			//printf("%d\n",ltid + s);
 			sdata[ltid] += sdata[ltid + s];
 		}
 
@@ -39,6 +36,20 @@ __device__ unsigned int reduce_sum(long in, cg::thread_block cta)
 	return sdata[0];
 }
 
+/// <summary>
+/// kernel function for simulation
+/// For every depth, do the loop #(photonnum/(blockdim*griddim)) times, calculate photon absorption, store results into parameter count;
+/// Then continue the loop for next depth.
+/// </summary>
+/// <param name="count"></param>	Array for returning results
+/// <param name="depthbin_ary"></param>	Incident photon depths (stored as bin id of the depth)
+/// <param name="depthsize"></param>	Total number of photon sets
+/// <param name="anglebinsize"></param>	Total bin number of angle
+/// <param name="lut"></param>	Pointer to the lut data
+/// <param name="photon_num"></param>	Photon number for each sets.
+/// <param name="rndstates"></param>	Random number generater
+/// <param name="seed"></param>	Random number seed
+/// <returns></returns>
 __global__ void SimulatePhotonAbsorption(long* count, int* depthbin_ary, int depthsize, int anglebinsize, double* lut, 
 										long* photon_num, curandStateXORWOW_t* rndstates, unsigned int seed) {
 	// Handle to thread block group
@@ -59,11 +70,8 @@ __global__ void SimulatePhotonAbsorption(long* count, int* depthbin_ary, int dep
 		unsigned int countflag = 0;
 		for (unsigned photonid = tid; photonid < photon_num[depthid]; photonid += step) {
 			int anglebin = (int)(anglebinsize * curand_uniform_double(&localState));
-			//int anglebin = 0;
 			double prob = lut[depthbin_ary[depthid] * anglebinsize + anglebin];
 			double rndm = curand_uniform_double(&localState);
-			//double rndm = 0;
-			//countflag = rndm < prob ? 1 : 0;
 			if (rndm < prob)	countflag++;
 		}
 		countflag = reduce_sum(countflag, cta);
@@ -71,47 +79,6 @@ __global__ void SimulatePhotonAbsorption(long* count, int* depthbin_ary, int dep
 			count[bid + depthid * gridDim.x] = countflag;
 		}
 	}
-
-	////printf("incuda\n");
-	//cg::thread_block cta = cg::this_thread_block();
-	//int bid = blockIdx.x;
-	//int tid = blockDim.x * blockIdx.x + threadIdx.x;
-	//int local_tid = threadIdx.x;
-	//int depthid;
-	//long countflag = -1;
-	////if (bid == gridDim.x - 1)	printf("enter griddim-1: %d \n", bid);
-
-	//for (int i = 0; i < depthsize; i++) {
-	//	if (bid >= grid_divide_points[i] && bid < grid_divide_points[i + 1]) {
-	//		depthid = depthbin_ary[i];
-	//		if (bid == grid_divide_points[i + 1] - 1 && local_tid >= tail_photon_num[i]) {
-	//			countflag = 0;
-	//		}
-	//		break;
-	//	}
-	//}
-	////if (tid > size) return;
-	////printf("1: %d, %d\n", count_flag, threadIdx.x);
-	//if (countflag != 0) {
-	//	curand_init(seed, tid, 0, &rndstates[tid]);
-	//	int anglebin = (int)(anglebinsize * curand_uniform_double(&rndstates[tid]));
-	//	//int anglebin = 0;
-	//	double prob = lut[depthid * anglebinsize + anglebin];
-	//	double rndm = curand_uniform_double(&rndstates[tid]);
-	//	//double rndm = 0;
-	//	countflag = rndm < prob ? 1 : 0;
-	//}
-	////countflag = 1;
-
-	//countflag = reduce_sum(countflag, cta);
-	////__syncthreads();
-
-	//if (threadIdx.x == 0) {
-	//	count[bid] = countflag;
-	//	//printf("bid: %d, count: %d\n", bid, countflag);
-	//	//if(countflag != blockDim.x) printf("bid: %d, count: %d\n", bid, countflag);
-	//	//if (bid == gridDim.x - 1)	printf("in griddim-1: %d \n",countflag);
-	//}
 }
 
 

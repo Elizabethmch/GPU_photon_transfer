@@ -45,7 +45,7 @@ void showHelp(int argc, const char** argv)
 	cout << left;
 	cout << "    " << setw(20) << "--lut=<lut.dat>" << "Specify look up table data file" << endl;
 	cout << "    " << setw(20) << "--sim-num=<N>" << "Specify simulation number" << endl;
-	cout << "	 " << setw(20) << "--sets-num=<N>" << "Specify number of sets in each simulation" << endl;
+	cout << "    " << setw(20) << "--sets-num=<N>" << "Specify number of sets in each simulation" << endl;
 	cout << "    " << setw(20) << "--photon-num=<N>" << "Specify photon number in each sets" << endl;
 	cout << "    " << setw(20) << "--verification" << "Enable verfication mode" << endl;
 	cout << "    " << setw(20) << "--block-size=<N>" << "Specify number of threads per block" << endl;
@@ -176,7 +176,7 @@ int main(int argc, char **argv) {
 
 	if (verification_mode == true) {
 		PrintMeanProbOfDepth(table, 0);
-		int depthid = (int)((depth - MINDPT) / (MAXDPT - MINDPT) * 100;
+		int depthid = (int)((depth - MINDPT) / (MAXDPT - MINDPT) * 100);
 		printf("depth id: %d, depth vector size: %d, photon number in vec: %d\n", depthid, incident_depth.size(), incident_photon_num[0] );
 	}
 	
