@@ -112,6 +112,7 @@ vector<long> ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, 
 	int* d_depth_in_bin;
 	CHECK(cudaMalloc((void**)&d_depth_in_bin, depth.size() * sizeof(int)));
 	CHECK(cudaMemcpy((void*)d_depth_in_bin, (void*)&(depth_in_bin[0]), depth.size() * sizeof(int), cudaMemcpyHostToDevice));
+	CHECK(cudaDeviceSynchronize());
 	transElaps += (cpuSecond() - transStart);
 	
 	//DepthCnt_ary: count absorbed photon for each depth	
@@ -137,6 +138,7 @@ vector<long> ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, 
 		totalThreadNum = grid.x * block.x;
 		transStart = cpuSecond();
 		CHECK(cudaMalloc((void**)&states, sizeof(curandStateXORWOW_t) * block.x * grid.x));
+		CHECK(cudaDeviceSynchronize());
 		transElaps += (cpuSecond() - transStart);
 	}
 
@@ -154,6 +156,7 @@ vector<long> ManagePhotonAbsorption::getAbsorbedPhotonNum(vector<double> depth, 
 	//collect results
 	transStart = cpuSecond();
 	CHECK(cudaMemcpy(h_DepthCnt_ary, d_DepthCnt_ary, count_array_size, cudaMemcpyDeviceToHost));
+	CHECK(cudaDeviceSynchronize());
 	transElaps += (cpuSecond() - transStart);
 
 	vector<long> absorbcnt;
@@ -185,6 +188,7 @@ ManagePhotonAbsorption::ManagePhotonAbsorption(LUT* lut, double maxdepth, double
 	transStart = cpuSecond();
 	CHECK(cudaMalloc((void**)&d_lut, lut_total_size * sizeof(double)));
 	CHECK(cudaMemcpy((void*)d_lut, &((*h_lut_ptr)[0]), lut_total_size * sizeof(double), cudaMemcpyHostToDevice));
+	CHECK(cudaDeviceSynchronize());
 	transElaps += (cpuSecond() - transStart);	
 }
 
